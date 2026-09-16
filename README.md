@@ -1,200 +1,202 @@
-# 🧠 Brain Tumor MRI Classification & Diagnostic Benchmark
+# 🧠 Brain Tumor SAM Benchmark: Comparative Evaluation of Segment Anything Models on Clinical MRIs
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0%2B-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Dataset: 12K+ MRIs](https://img.shields.io/badge/Dataset-12%2C064%20Scans-orange.svg)]()
-[![Classes: 4 Diagnoses](https://img.shields.io/badge/Classes-4%20Categories-purple.svg)]()
+[![Dataset: 12K+ Scans](https://img.shields.io/badge/Dataset-12%2C064%20MRIs-orange.svg)]()
+[![Architectures: SAM | MedSAM | SAM 2](https://img.shields.io/badge/Benchmark-3%20SAM%20Variants-purple.svg)]()
 [![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-A deep learning computer vision pipeline designed for multi-class classification of brain tumors from clinical Magnetic Resonance Imaging (MRI) scans. Built on clinical T1-weighted contrast-enhanced scans collected from **CSCR Hospital** and **Epic Health Care** (Chittagong, Bangladesh).
+A deep learning benchmark evaluating and comparing **multiple variants of the Segment Anything Model (SAM)** on clinical T1-weighted contrast-enhanced brain MRI scans collected from **CSCR Hospital** and **Epic Health Care** (Chittagong, Bangladesh).
 
 ---
 
 ## 📌 Table of Contents
 
-- [Overview & Clinical Background](#-overview--clinical-background)
-- [Dataset Architecture](#-dataset-architecture)
+- [Executive Summary & Motivation](#-executive-summary--motivation)
+- [Target SAM Architectures Compared](#-target-sam-architectures-compared)
+- [Dataset Overview & Clinical Scope](#-dataset-overview--clinical-scope)
 - [Repository Structure](#-repository-structure)
-- [Model Architecture & Pipeline](#-model-architecture--pipeline)
+- [Prompting & Evaluation Methodology](#-prompting--evaluation-methodology)
 - [Quick Start & Installation](#-quick-start--installation)
-- [Workflow & Usage](#-workflow--usage)
-  - [1. Audit Dataset](#1-audit-dataset)
-  - [2. Exploratory Data Analysis (EDA)](#2-exploratory-data-analysis-eda)
-  - [3. Train Model](#3-train-model)
-  - [4. Evaluate & Generate Reports](#4-evaluate--generate-reports)
+- [Benchmarking Workflow](#-benchmarking-workflow)
+- [Comparative Metrics](#-comparative-metrics)
 - [Clinical & Ethical Disclaimer](#-clinical--ethical-disclaimer)
-- [Author & Acknowledgments](#-author--acknowledgments)
+- [References & Acknowledgments](#-references--acknowledgments)
 
 ---
 
-## 🔬 Overview & Clinical Background
+## 🔬 Executive Summary & Motivation
 
-Brain tumors represent some of the most critical and challenging conditions in neuro-oncology. Early and precise classification of intracranial lesions directly impacts surgical planning, radiotherapy, and patient survival rates:
+Foundation vision models like Meta's **Segment Anything Model (SAM)** have demonstrated remarkable zero-shot promptable segmentation on natural images. However, their clinical utility on **medical imaging modalities (such as brain MRI)** presents unique challenges:
+- High variability in intracranial soft-tissue contrast.
+- Subtle, infiltrative boundaries of **Gliomas** vs. well-circumscribed **Meningiomas** and skull-base **Pituitary** tumors.
+- Domain shift between standard natural RGB photography (SA-1B) and radiological grayscale distributions.
 
-- **Glioma**: Aggressive tumors originating in glial tissue (astrocytomas, oligodendrogliomas, glioblastomas) with variable invasiveness.
-- **Meningioma**: Typically benign, slow-growing tumors arising from the protective membranes (meninges) surrounding the brain and spinal cord.
-- **Pituitary Tumor**: Adenomas affecting the pituitary gland at the base of the skull, frequently leading to hormonal dysfunction and optic chiasm compression.
-- **No Tumor (Normal)**: Healthy control scans devoid of pathological neoplasm.
-
-This repository provides an end-to-end, reproducible deep learning framework featuring state-of-the-art transfer learning architectures (ResNet, EfficientNet) to classify brain MRI scans into these 4 clinical categories.
+This repository provides a standardized experimental testbed to benchmark and compare **2–3 prominent SAM variants**:
+1. **Vanilla SAM (Meta AI)** — The generalist baseline foundation model.
+2. **MedSAM (Wang et al.)** — Domain-adapted foundation model fine-tuned on 1.57M+ medical 2D/3D image-mask pairs.
+3. **SAM 2 / MobileSAM** — Next-generation unified streaming architectures and lightweight edge distillations.
 
 ---
 
-## 📊 Dataset Architecture
+## ⚖️ Target SAM Architectures Compared
 
-The dataset comprises **12,064 preprocessed T1-weighted contrast-enhanced axial MRI scans**, split into an 80% training set and a 20% testing benchmark:
+| Model Variant | Backbone / Paradigm | Pretraining Domain | Primary Strength in Medical Imaging | Intended Role in Benchmark |
+| :--- | :--- | :--- | :--- | :--- |
+| **Vanilla SAM** *(Kirillov et al.)* | ViT-B / ViT-L / ViT-H | Natural images (SA-1B dataset, 11M images, 1B masks) | Generalist zero-shot baseline, high semantic capacity | Baseline zero-shot performance |
+| **MedSAM** *(Ma & Wang et al.)* | ViT-B + Medical Neck | 1.57M+ medical image-mask pairs across 10+ modalities | Specialized in low-contrast tissue margins & radiological features | Domain-specific benchmark standard |
+| **SAM 2 / MobileSAM** *(Ravi et al. / Zhang et al.)* | Memory Attention / TinyViT | SA-V video dataset / Knowledge Distillation | Faster inference latency, real-time interactive radiologist workflow | Efficiency vs. accuracy trade-off analysis |
 
-| Diagnostic Class | Clinical Significance | Train Images | Test Images | Total Images | Distribution |
+---
+
+## 📊 Dataset Overview & Clinical Scope
+
+The benchmark utilizes **12,064 clinical axial brain MRI scans** organized into standardized splits:
+
+| Class | Clinical Description | Train Scans | Test Scans | Total Scans | Proportion |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **Glioma** | Glial tissue neoplasm | 3,018 | 755 | **3,773** | 31.27% |
-| **Meningioma** | Dural/meningeal tumor | 2,183 | 546 | **2,729** | 22.62% |
-| **No Tumor** | Healthy / normal control | 1,945 | 487 | **2,432** | 20.16% |
-| **Pituitary** | Sellar / pituitary adenoma | 2,504 | 626 | **3,130** | 25.94% |
+| **Glioma** | Primary intra-axial glial tumor with irregular infiltrative borders | 3,018 | 755 | **3,773** | 31.27% |
+| **Meningioma** | Extra-axial dural-tail tumor with defined boundaries | 2,183 | 546 | **2,729** | 22.62% |
+| **Pituitary** | Sellar and parasellar intracranial adenoma | 2,504 | 626 | **3,130** | 25.94% |
+| **No Tumor** | Normal brain anatomy / negative control cohort | 1,945 | 487 | **2,432** | 20.16% |
 | **Overall Total** | — | **9,650** | **2,414** | **12,064** | **100.00%** |
 
-*Data Source: Clinical cohorts from CSCR Hospital and Epic Health Care, Chittagong, Bangladesh.*
+*Clinical Source: CSCR Hospital and Epic Health Care, Chittagong, Bangladesh.*
 
 ---
 
 ## 📂 Repository Structure
 
 ```text
-Brain-Tumor-MRI-Classification/
-├── .gitignore                      # Python, PyTorch checkpoints, OS ignores
-├── LICENSE                         # MIT License
-├── README.md                       # Comprehensive project documentation
-├── requirements.txt                # Environment dependencies
+Brain-Tumor-SAM-Benchmark/
+├── .gitignore                          # PyTorch checkpoints, caches, and system files
+├── LICENSE                             # MIT License
+├── README.md                           # Comprehensive documentation
+├── requirements.txt                    # Dependencies including PyTorch, SAM, OpenCV, MONAI
 │
-├── data/                           # Clinical dataset
-│   ├── train/                      # Training subset (9,650 images)
+├── data/                               # 12,064 clinical MRI scans
+│   ├── train/                          # 9,650 training scans across 4 classes
 │   │   ├── glioma/
 │   │   ├── meningioma/
 │   │   ├── notumor/
 │   │   └── pituitary/
-│   └── test/                       # Test benchmark subset (2,414 images)
+│   └── test/                           # 2,414 test benchmark scans
 │       ├── glioma/
 │       ├── meningioma/
 │       ├── notumor/
 │       └── pituitary/
 │
-├── notebooks/                      # Exploratory Data Analysis & experiments
-│   └── 01_exploratory_data_analysis.ipynb
+├── notebooks/
+│   └── 01_exploratory_data_analysis.ipynb  # Interactive data exploration & scan inspection
 │
-├── src/                            # Modular PyTorch pipeline
+├── src/                                # Modular Benchmarking & Modeling Pipeline
 │   ├── __init__.py
-│   ├── config.py                   # Centralized hyperparameter & path configs
-│   ├── dataset.py                  # PyTorch DataLoader & data augmentation pipelines
-│   ├── model.py                    # Transfer learning models (ResNet, EfficientNet)
-│   ├── train.py                    # Training & validation loop with checkpointing
-│   └── evaluate.py                 # Multi-class evaluation & confusion matrix generator
+│   ├── config.py                       # Global paths, device settings, and hyperparameters
+│   ├── dataset.py                      # DataLoaders & medical image augmentations
+│   ├── sam_benchmark.py                # Multi-SAM evaluation harness & prompt generators
+│   ├── model.py                        # Transfer learning classification baseline
+│   ├── train.py                        # Model training pipeline
+│   └── evaluate.py                     # Evaluation metrics & confusion matrix generator
 │
-└── scripts/                        # Automation & audit utilities
-    └── dataset_summary.py          # Dataset verification & class distribution audit
+└── scripts/
+    └── dataset_summary.py              # Automated dataset verification audit
 ```
 
 ---
 
-## 🧠 Model Architecture & Pipeline
+## 🎯 Prompting & Evaluation Methodology
 
-The pipeline implements transfer learning leveraging deep convolutional neural networks initialized with ImageNet pre-trained weights:
+Each SAM variant is evaluated across standard clinical interaction paradigms:
 
-1. **Preprocessing & Augmentation**:
-   - Resized to standard input resolution ($224 \times 224$).
-   - Random horizontal flips ($p = 0.5$) and stochastic angular rotation ($\pm 15^\circ$) for anatomical invariance.
-   - Contrast/Brightness jitter for scan-acquisition robustness.
-   - Channel normalization based on ImageNet statistics ($\mu = [0.485, 0.456, 0.406]$, $\sigma = [0.229, 0.224, 0.225]$).
+1. **Bounding Box Prompts ($B_{box}$)**:
+   - Simulates radiologist region-of-interest (ROI) selection.
+   - Perturbed with stochastic boundary jitter ($\pm 5\text{px}$) to assess model stability under imperfect clinical prompts.
+2. **Point Prompts ($P_{point}$)**:
+   - Single and multiple positive foreground points located near tumor centroids.
+   - Negative background points to suppress false positives in adjacent normal sulci/ventricles.
+3. **Automatic Mask Generation (AMG)**:
+   - Grid-based zero-shot evaluation without clinician prompt guidance.
 
-2. **Backbones Supported**:
-   - **ResNet-50**: Deep residual network with bottleneck blocks, well-suited for fine structural tumor boundary detection.
-   - **ResNet-18**: Lightweight residual baseline for fast inference.
-   - **EfficientNet-B0**: Compound-scaled neural architecture optimizing efficiency and FLOPs.
-
-3. **Classification Head**:
-   - Global Average Pooling (GAP) $\rightarrow$ Dropout ($p=0.3$) $\rightarrow$ Linear(256) $\rightarrow$ ReLU $\rightarrow$ Dropout ($p=0.2$) $\rightarrow$ Linear(4, Softmax).
+### Quantitative Metrics
+- **Sørensen–Dice Coefficient (DSC)**: Overlap fidelity between predicted lesion and ground truth.
+- **Intersection over Union (mIoU / Jaccard Index)**: Spatial precision metric.
+- **Inference Latency ($T_{inf}$)**: Runtime per scan (ms) on GPU/CPU to measure clinical practicality.
 
 ---
 
 ## 🚀 Quick Start & Installation
 
-### Prerequisites
-- Python 3.10 or higher
-- NVIDIA GPU with CUDA support recommended (CPU is also supported)
-
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/Akma86/Brain-Tumor-MRI-Classification.git
-cd Brain-Tumor-MRI-Classification
+git clone https://github.com/Akma86/Brain-Tumor-SAM-Benchmark.git
+cd Brain-Tumor-SAM-Benchmark
 ```
 
-### 2. Create and Activate Virtual Environment
+### 2. Environment Setup
 ```bash
-# On Linux / macOS:
-python3 -m venv venv
+# Setup virtual environment
+python -m venv venv
+
+# Windows:
+venv\Scripts\activate
+
+# Linux / macOS:
 source venv/bin/activate
 
-# On Windows:
-python -m venv venv
-venv\Scripts\activate
-```
-
-### 3. Install Dependencies
-```bash
+# Install core dependencies
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+### 3. Optional: Install SAM Frameworks
+```bash
+# Meta Vanilla SAM
+pip install git+https://github.com/facebookresearch/segment-anything.git
+
+# Meta SAM 2 (Next-Gen)
+pip install git+https://github.com/facebookresearch/segment-anything-2.git
+```
+
 ---
 
-## 💻 Workflow & Usage
+## 💻 Benchmarking Workflow
 
-### 1. Audit Dataset
-Verify integrity across all 12,064 scans:
+### 1. Audit Dataset Scans
 ```bash
 python scripts/dataset_summary.py
 ```
 
-### 2. Exploratory Data Analysis (EDA)
-Launch the interactive Jupyter notebook to inspect samples, class distributions, and pixel histograms:
+### 2. Run SAM Benchmark Suite
+Run the multi-model comparison harness:
+```bash
+python src/sam_benchmark.py
+```
+
+### 3. Exploratory Data Analysis
 ```bash
 jupyter notebook notebooks/01_exploratory_data_analysis.ipynb
 ```
-
-### 3. Train Model
-Train a classifier (e.g. `resnet50` backbone) with automated learning rate scheduling and best checkpoint saving:
-```bash
-python src/train.py --model resnet50 --epochs 15 --batch-size 32 --lr 1e-4
-```
-Supported `--model` options: `resnet50`, `resnet18`, `efficientnet_b0`.
-
-### 4. Evaluate & Generate Reports
-Evaluate the best saved checkpoint on the unseen test set ($n = 2,414$ images) to compute precision, recall, F1-score, and render the confusion matrix:
-```bash
-python src/evaluate.py --checkpoint checkpoints/best_resnet50.pth --output-dir reports
-```
-
-Generated outputs:
-- Per-class Precision, Recall, and F1-score metrics table.
-- High-resolution Confusion Matrix heatmap saved to `reports/confusion_matrix_resnet50.png`.
 
 ---
 
 ## ⚖️ Clinical & Ethical Disclaimer
 
 > [!CAUTION]
-> **Medical Imaging Disclaimer**:
-> This codebase and associated models are developed strictly for **academic, benchmark, and research purposes**. They have not been certified or approved as medical devices by any regulatory body (e.g., US FDA, CE Mark). This software **must not** be used as a primary diagnostic tool in clinical decision-making or patient healthcare management without direct board-certified radiologist oversight.
+> **Medical Research Disclaimer**:
+> This repository and its benchmark results are strictly intended for **academic, benchmark, and comparative research purposes**. Neither the models nor this software are approved medical devices (US FDA / CE Mark). They **must not** be used as a primary diagnostic tool in patient care without direct supervision by board-certified radiologists.
 
 ---
 
-## 👨‍💻 Author & Acknowledgments
+## 📚 References & Acknowledgments
 
-- **Author**: [Akmal Yaasir Fauzaan](https://github.com/Akma86)
-- **Clinical Data Source**: CSCR Hospital and Epic Health Care (Chittagong, Bangladesh).
-- **Mendeley Data Reference**: *A Large Brain Tumor MRI Dataset Collected from CSCR Hospital and Epic Health Care, Chittagong, Bangladesh* / *BDNeuro-MRI Dataset*.
+1. **SAM**: Kirillov, A., et al. *"Segment Anything"*, ICCV 2023. [arXiv:2304.02643](https://arxiv.org/abs/2304.02643)
+2. **MedSAM**: Ma, J., Wang, B., et al. *"Segment Anything in Medical Images"*, Nature Communications 2024. [arXiv:2304.12306](https://arxiv.org/abs/2304.12306)
+3. **SAM 2**: Ravi, N., et al. *"SAM 2: Segment Anything in Images and Videos"*, Meta AI 2024. [arXiv:2408.00714](https://arxiv.org/abs/2408.00714)
+4. **Clinical Dataset**: Clinical MRI cohorts sourced from CSCR Hospital and Epic Health Care (Chittagong, Bangladesh).
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+Distributed under the **MIT License** — see [LICENSE](LICENSE) for details.
